@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equity Research Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+  :root{
+    --bg:#0A0D10;
+    --panel:#12171C;
+    --panel-alt:#171D24;
+    --border:#232B33;
+    --text-primary:#E7EBEE;
+    --text-secondary:#7C8894;
+    --accent:#33D6C0;
+    --accent-dim:#1D7A6E;
+    --positive:#4CC38A;
+    --negative:#E0704B;
+    --amber:#D9A343;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text-primary);
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  .display{ font-family:'Space Grotesk', sans-serif; }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg, var(--panel-alt), var(--bg));
+  }
+  .brand{ display:flex; align-items:baseline; gap:12px; }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif; font-size:20px; font-weight:700;
+    letter-spacing:0.5px; margin:0; color:var(--text-primary);
+  }
+  .brand h1 span{ color:var(--accent); }
+  .brand .tag{
+    font-size:11px; color:var(--text-secondary); letter-spacing:1.5px;
+    text-transform:uppercase; border-left:1px solid var(--border); padding-left:12px;
+  }
+  .tape{ display:flex; gap:28px; }
+  .tape .stat{ text-align:right; }
+  .tape .stat .num{ font-family:'IBM Plex Mono',monospace; font-size:17px; font-weight:600; color:var(--accent); }
+  .tape .stat .lbl{ font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; margin-top:2px;}
+
+  /* ---------- Layout ---------- */
+  .layout{ display:grid; grid-template-columns:300px 1fr; min-height:calc(100vh - 65px); }
+
+  /* ---------- Sidebar ---------- */
+  aside{ border-right:1px solid var(--border); background:var(--panel); padding:18px; overflow-y:auto; }
+  .sidebar-title{ font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-secondary); margin-bottom:10px;}
+  .search{
+    width:100%; background:var(--panel-alt); border:1px solid var(--border); border-radius:4px;
+    color:var(--text-primary); padding:8px 10px; font-size:13px; font-family:'IBM Plex Sans',sans-serif;
+    margin-bottom:12px;
+  }
+  .search:focus{ outline:none; border-color:var(--accent); }
+  .pills{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+  .pill{
+    font-size:11px; padding:4px 9px; border-radius:20px; border:1px solid var(--border);
+    color:var(--text-secondary); cursor:pointer; user-select:none; transition:all .15s;
+  }
+  .pill:hover{ border-color:var(--accent-dim); color:var(--text-primary); }
+  .pill.active{ background:var(--accent); border-color:var(--accent); color:#06201C; font-weight:600; }
+
+  .company-row{
+    display:flex; align-items:center; justify-content:space-between; padding:9px 10px;
+    border-radius:5px; cursor:pointer; margin-bottom:2px; border:1px solid transparent;
+  }
+  .company-row:hover{ background:var(--panel-alt); }
+  .company-row.active{ background:var(--panel-alt); border-color:var(--accent-dim); }
+  .company-row .cticker{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12.5px; color:var(--text-primary); }
+  .company-row .cname{ font-size:10.5px; color:var(--text-secondary); }
+  .company-row .cchange{ font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; }
+  .up{ color:var(--positive); } .down{ color:var(--negative); }
+
+  /* ---------- Main ---------- */
+  main{ padding:24px 30px; }
+  .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:22px; }
+  .tab{
+    padding:10px 16px; font-size:13px; color:var(--text-secondary); cursor:pointer;
+    border-bottom:2px solid transparent; font-weight:500;
+  }
+  .tab:hover{ color:var(--text-primary); }
+  .tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .company-header{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; flex-wrap:wrap; gap:10px;}
+  .company-header h2{ font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0; }
+  .company-header .sub{ color:var(--text-secondary); font-size:13px; margin-top:4px; }
+  .price-block{ text-align:right; }
+  .price-block .price{ font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; }
+  .price-block .mcap{ font-size:11.5px; color:var(--text-secondary); margin-top:2px; }
+
+  .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:12px; margin-bottom:28px; }
+  .kpi{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:13px 14px; }
+  .kpi .lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-secondary); margin-bottom:6px; }
+  .kpi .val{ font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; }
+  .kpi .peer{ font-size:10.5px; color:var(--text-secondary); margin-top:4px; }
+
+  .panel{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:18px 20px; margin-bottom:20px; }
+  .panel-title{ font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:600; margin:0 0 4px 0; }
+  .panel-sub{ font-size:11.5px; color:var(--text-secondary); margin-bottom:14px; }
+
+  .chart-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:1100px){ .chart-grid{ grid-template-columns:1fr; } }
+
+  /* Leaderboard ledger */
+  table.ledger{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.ledger th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.6px;
+    color:var(--text-secondary); padding:8px 10px; border-bottom:1px solid var(--border); font-weight:500;
+  }
+  table.ledger td{ padding:9px 10px; border-bottom:1px solid var(--border); }
+  table.ledger tr:hover td{ background:var(--panel-alt); }
+  .ticker-tag{ font-family:'IBM Plex Mono',monospace; font-weight:600; background:var(--panel-alt); padding:2px 6px; border-radius:3px; font-size:11.5px; }
+  .ledger-bar-wrap{ position:relative; height:16px; background:var(--panel-alt); border-radius:3px; overflow:hidden; width:180px; }
+  .ledger-bar{ position:absolute; top:0; bottom:0; }
+  .ledger-bar.quality{ background:var(--positive); right:50%; }
+  .ledger-bar.value{ background:var(--amber); left:50%; }
+  .ledger-mid{ position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--border); }
+
+  footer{ padding:18px 30px; color:var(--text-secondary); font-size:11px; border-top:1px solid var(--border); }
+  footer b{ color:var(--text-primary); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Equity<span>Desk</span></h1>
+    <div class="tag">Research Dashboard — India Coverage Universe</div>
+  </div>
+  <div class="tape">
+    <div class="stat"><div class="num" id="tapeCompanies">—</div><div class="lbl">Companies</div></div>
+    <div class="stat"><div class="num" id="tapeSectors">—</div><div class="lbl">Sectors</div></div>
+    <div class="stat"><div class="num" id="tapeYears">—</div><div class="lbl">FY Span</div></div>
+    <div class="stat"><div class="num" id="tapeAsOf">—</div><div class="lbl">As Of</div></div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="sidebar-title">Sectors</div>
+    <div class="pills" id="sectorPills"></div>
+    <input class="search" id="searchBox" placeholder="Search ticker or company..." />
+    <div class="sidebar-title">Coverage (<span id="coverageCount">0</span>)</div>
+    <div id="companyList"></div>
+  </aside>
+
+  <main>
+    <div class="tabs">
+      <div class="tab active" data-view="overview">Overview</div>
+      <div class="tab" data-view="trends">5-Year Trends</div>
+      <div class="tab" data-view="benchmark">Peer Benchmarking</div>
+      <div class="tab" data-view="valuation">Comparative Valuation</div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="view active" id="view-overview">
+      <div class="company-header">
+        <div>
+          <h2 id="ovName">—</h2>
+          <div class="sub" id="ovSub">—</div>
+        </div>
+        <div class="price-block">
+          <div class="price mono" id="ovPrice">—</div>
+          <div class="mcap" id="ovMcap">—</div>
+        </div>
+      </div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="panel">
+        <div class="panel-title">5-Year Financial Snapshot</div>
+        <div class="panel-sub">Revenue &amp; EBITDA (₹ crore) — FY2021–FY2025</div>
+        <div id="ovChart" style="height:320px;"></div>
+      </div>
+    </div>
+
+    <!-- TRENDS -->
+    <div class="view" id="view-trends">
+      <div class="panel">
+        <div class="panel-title" id="trendsTitle">5-Year Trend Analysis</div>
+        <div class="panel-sub">Growth, profitability, and returns — automated from as-reported financials</div>
+        <div class="chart-grid">
+          <div id="trendRevenue" style="height:280px;"></div>
+          <div id="trendMargins" style="height:280px;"></div>
+          <div id="trendReturns" style="height:280px;"></div>
+          <div id="trendLeverage" style="height:280px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BENCHMARK -->
+    <div class="view" id="view-benchmark">
+      <div class="panel">
+        <div class="panel-title" id="benchTitle">Peer Benchmarking</div>
+        <div class="panel-sub">Selected company vs. sector mean — latest fiscal year</div>
+        <div id="benchChart" style="height:420px;"></div>
+      </div>
+    </div>
+
+    <!-- VALUATION -->
+    <div class="view" id="view-valuation">
+      <div class="panel">
+        <div class="panel-title">Comparative Valuation Ledger</div>
+        <div class="panel-sub">Composite score = avg. fundamental-strength percentile − avg. valuation-richness percentile, ranked within sector. Green = quality percentile, amber = valuation-richness percentile.</div>
+        <table class="ledger">
+          <thead><tr>
+            <th>Ticker</th><th>Company</th><th>Sector</th><th>P/E</th><th>EV/EBITDA</th><th>ROE</th><th>Composite</th><th style="width:190px;">Quality vs. Valuation</th>
+          </tr></thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Valuation vs. Quality Map</div>
+        <div class="panel-sub">P/E (x-axis) vs. ROE (y-axis) — bubble size = market cap, colored by sector</div>
+        <div id="scatterChart" style="height:420px;"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer>
+  Built with <b>Python · SQL (SQLite) · Pandas</b> — synthetic sample dataset for demonstration. Pipeline: <span class="mono">generate_data.py → load_to_sql.py → metrics.py → build_dashboard_data.py</span>. Swap the data generator for a live feed (broker API / Screener.in export / yfinance) to run on real coverage.
+</footer>
+
+<script src="data.js"></script>
+<script>
+const D = DASHBOARD_DATA;
+const companies = D.companies;
+const financials = D.financials;
+const metrics = D.metrics;
+const compVal = D.comparative_valuation;
+const sectorBench = D.sector_benchmarks;
+
+const LATEST_YEAR = Math.max(...financials.map(f=>f.fiscal_year));
+const SECTORS = [...new Set(companies.map(c=>c.sector))];
+const SECTOR_COLORS = {};
+const palette = ['#33D6C0','#E0704B','#D9A343','#7C9CE0','#B084E0','#4CC38A'];
+SECTORS.forEach((s,i)=>SECTOR_COLORS[s]=palette[i%palette.length]);
+
+let activeSector = 'ALL';
+let activeTicker = companies[0].ticker;
+
+// ---------- helpers ----------
+const fmt = (v, d=1) => (v===null||v===undefined||isNaN(v)) ? '—' : Number(v).toFixed(d);
+const fmtCr = v => v>=1000 ? (v/1000).toFixed(1)+'K' : Math.round(v);
+const byTicker = t => companies.find(c=>c.ticker===t);
+const finFor = t => financials.filter(f=>f.ticker===t).sort((a,b)=>a.fiscal_year-b.fiscal_year);
+const metFor = t => metrics.filter(m=>m.ticker===t).sort((a,b)=>a.fiscal_year-b.fiscal_year);
+const compValFor = t => compVal.find(c=>c.ticker===t);
+const benchFor = sector => sectorBench.find(b=>b.sector===sector);
+
+// ---------- header tape ----------
+document.getElementById('tapeCompanies').textContent = companies.length;
+document.getElementById('tapeSectors').textContent = SECTORS.length;
+document.getElementById('tapeYears').textContent = 'FY21–'+LATEST_YEAR;
+document.getElementById('tapeAsOf').textContent = 'Jul 2026';
+
+// ---------- sector pills ----------
+const pillsEl = document.getElementById('sectorPills');
+function renderPills(){
+  let html = `<div class="pill ${activeSector==='ALL'?'active':''}" data-s="ALL">All</div>`;
+  SECTORS.forEach(s=>{
+    html += `<div class="pill ${activeSector===s?'active':''}" data-s="${s}">${s}</div>`;
+  });
+  pillsEl.innerHTML = html;
+  pillsEl.querySelectorAll('.pill').forEach(p=>{
+    p.addEventListener('click', ()=>{ activeSector = p.dataset.s; renderPills(); renderCompanyList(); });
+  });
+}
+
+// ---------- company list ----------
+function renderCompanyList(){
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  let list = companies.filter(c=>
+    (activeSector==='ALL' || c.sector===activeSector) &&
+    (c.ticker.toLowerCase().includes(q) || c.name.toLowerCase().includes(q))
+  );
+  document.getElementById('coverageCount').textContent = list.length;
+  const el = document.getElementById('companyList');
+  el.innerHTML = list.map(c=>{
+    const m = metFor(c.ticker).slice(-1)[0];
+    const g = m ? m.revenue_growth : null;
+    const cls = g>=0 ? 'up' : 'down';
+    const arrow = g>=0 ? '▲' : '▼';
+    return `<div class="company-row ${c.ticker===activeTicker?'active':''}" data-t="${c.ticker}">
+      <div><div class="cticker">${c.ticker}</div><div class="cname">${c.name}</div></div>
+      <div class="cchange ${cls}">${arrow} ${fmt(Math.abs(g))}%</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.company-row').forEach(r=>{
+    r.addEventListener('click', ()=>{ activeTicker = r.dataset.t; renderCompanyList(); renderAll(); });
+  });
+}
+
+// ---------- tabs ----------
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('view-'+t.dataset.view).classList.add('active');
+    Plotly.Plots.resize && window.dispatchEvent(new Event('resize'));
+  });
+});
+document.getElementById('searchBox').addEventListener('input', renderCompanyList);
+
+// ---------- overview ----------
+const plotLayout = (extra={}) => Object.assign({
+  paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+  font:{color:'#7C8894', family:'IBM Plex Sans, sans-serif', size:11},
+  margin:{l:45,r:15,t:10,b:35},
+  legend:{orientation:'h', y:1.15, font:{color:'#7C8894'}},
+  xaxis:{gridcolor:'#1B2129', zerolinecolor:'#232B33'},
+  yaxis:{gridcolor:'#1B2129', zerolinecolor:'#232B33'},
+}, extra);
+
+function renderOverview(){
+  const c = byTicker(activeTicker);
+  const fin = finFor(activeTicker);
+  const met = metFor(activeTicker);
+  const latestFin = fin[fin.length-1];
+  const latestMet = met[met.length-1];
+  const cv = compValFor(activeTicker);
+  const mkt = D.companies ? null : null;
+
+  document.getElementById('ovName').textContent = `${c.name} (${c.ticker})`;
+  document.getElementById('ovSub').textContent = `${c.sector} · ${c.country} · FY${LATEST_YEAR} results`;
+
+  // price/mcap come from comparative_valuation row merge (has market_cap via pe calc source) -- fallback compute
+  const mc = latestFin.net_income && latestMet.pe_ratio ? (latestFin.net_income*latestMet.pe_ratio) : null;
+  document.getElementById('ovPrice').textContent = latestMet.pe_ratio ? `P/E ${fmt(latestMet.pe_ratio)}x` : '—';
+  document.getElementById('ovMcap').textContent = mc ? `Mkt Cap ≈ ₹${fmtCr(mc)} Cr` : '';
+
+  const kpis = [
+    ['Revenue Growth', fmt(latestMet.revenue_growth)+'%', latestMet.revenue_growth>=0?'positive':'negative'],
+    ['EBITDA Margin', fmt(latestMet.ebitda_margin)+'%', ''],
+    ['Net Margin', fmt(latestMet.net_margin)+'%', ''],
+    ['ROE', fmt(latestMet.roe)+'%', ''],
+    ['ROA', fmt(latestMet.roa)+'%', ''],
+    ['Debt / Equity', fmt(latestMet.debt_to_equity,2)+'x', ''],
+    ['Current Ratio', fmt(latestMet.current_ratio,2)+'x', ''],
+    ['FCF Yield', fmt(latestMet.fcf_yield)+'%', ''],
+    ['P/E Ratio', fmt(latestMet.pe_ratio)+'x', ''],
+    ['EV / EBITDA', fmt(latestMet.ev_ebitda)+'x', ''],
+    ['P/B Ratio', fmt(latestMet.pb_ratio)+'x', ''],
+    ['Composite Score', cv ? fmt(cv.composite_score) : '—', ''],
+  ];
+  document.getElementById('kpiGrid').innerHTML = kpis.map(([lbl,val,cls])=>`
+    <div class="kpi"><div class="lbl">${lbl}</div><div class="val ${cls==='positive'?'up':cls==='negative'?'down':''}">${val}</div></div>
+  `).join('');
+
+  Plotly.newPlot('ovChart', [
+    {x:fin.map(f=>'FY'+f.fiscal_year), y:fin.map(f=>f.revenue), name:'Revenue', type:'bar', marker:{color:'#233A45'}},
+    {x:fin.map(f=>'FY'+f.fiscal_year), y:fin.map(f=>f.ebitda), name:'EBITDA', type:'scatter', mode:'lines+markers', line:{color:'#33D6C0', width:3}, marker:{size:6}}
+  ], plotLayout(), {displayModeBar:false, responsive:true});
+}
+
+function renderTrends(){
+  const c = byTicker(activeTicker);
+  const fin = finFor(activeTicker);
+  const met = metFor(activeTicker);
+  const yrs = fin.map(f=>'FY'+f.fiscal_year);
+  document.getElementById('trendsTitle').textContent = `${c.name} (${c.ticker}) — 5-Year Trend Analysis`;
+
+  Plotly.newPlot('trendRevenue', [
+    {x:yrs, y:fin.map(f=>f.revenue), name:'Revenue', type:'bar', marker:{color:'#233A45'}},
+    {x:yrs, y:fin.map(f=>f.net_income), name:'Net Income', type:'scatter', mode:'lines+markers', line:{color:'#4CC38A',width:3}}
+  ], plotLayout({title:{text:'Revenue vs. Net Income (₹ Cr)', font:{color:'#E7EBEE',size:12}}}), {displayModeBar:false,responsive:true});
+
+  Plotly.newPlot('trendMargins', [
+    {x:yrs, y:met.map(m=>m.ebitda_margin), name:'EBITDA Margin %', type:'scatter', mode:'lines+markers', line:{color:'#33D6C0',width:3}},
+    {x:yrs, y:met.map(m=>m.net_margin), name:'Net Margin %', type:'scatter', mode:'lines+markers', line:{color:'#D9A343',width:3}}
+  ], plotLayout({title:{text:'Margin Trend', font:{color:'#E7EBEE',size:12}}}), {displayModeBar:false,responsive:true});
+
+  Plotly.newPlot('trendReturns', [
+    {x:yrs, y:met.map(m=>m.roe), name:'ROE %', type:'scatter', mode:'lines+markers', line:{color:'#B084E0',width:3}},
+    {x:yrs, y:met.map(m=>m.roa), name:'ROA %', type:'scatter', mode:'lines+markers', line:{color:'#7C9CE0',width:3}}
+  ], plotLayout({title:{text:'Return Ratios', font:{color:'#E7EBEE',size:12}}}), {displayModeBar:false,responsive:true});
+
+  Plotly.newPlot('trendLeverage', [
+    {x:yrs, y:met.map(m=>m.debt_to_equity), name:'Debt/Equity', type:'bar', marker:{color:'#E0704B'}},
+    {x:yrs, y:met.map(m=>m.current_ratio), name:'Current Ratio', type:'scatter', mode:'lines+markers', line:{color:'#4CC38A',width:3}, yaxis:'y2'}
+  ], plotLayout({
+    title:{text:'Leverage & Liquidity', font:{color:'#E7EBEE',size:12}},
+    yaxis2:{overlaying:'y', side:'right', gridcolor:'transparent', color:'#7C8894'}
+  }), {displayModeBar:false,responsive:true});
+}
+
+function renderBenchmark(){
+  const c = byTicker(activeTicker);
+  const met = metFor(activeTicker).slice(-1)[0];
+  const b = benchFor(c.sector);
+  document.getElementById('benchTitle').textContent = `${c.name} (${c.ticker}) vs. ${c.sector} Sector Average`;
+
+  const dims = [
+    ['EBITDA Margin %','ebitda_margin'], ['Net Margin %','net_margin'], ['ROE %','roe'], ['ROA %','roa'],
+    ['Revenue Growth %','revenue_growth'], ['FCF Yield %','fcf_yield']
+  ];
+  Plotly.newPlot('benchChart', [
+    {x:dims.map(d=>d[0]), y:dims.map(d=>met[d[1]]), name:c.ticker, type:'bar', marker:{color:'#33D6C0'}},
+    {x:dims.map(d=>d[0]), y:dims.map(d=>b ? b[d[1]+'_mean'] : null), name:'Sector Mean', type:'bar', marker:{color:'#3A4550'}}
+  ], plotLayout({barmode:'group'}), {displayModeBar:false, responsive:true});
+}
+
+function renderValuation(){
+  const rows = [...compVal].sort((a,b)=>b.composite_score-a.composite_score);
+  document.getElementById('ledgerBody').innerHTML = rows.map(r=>{
+    const qPct = Math.min(100, ( (r.roe_pctile+r.roa_pctile+r.ebitda_margin_pctile+r.net_margin_pctile+r.fcf_yield_pctile+r.revenue_growth_pctile)/6 ));
+    const vPct = Math.min(100, ( (r.pe_ratio_pctile+r.ev_ebitda_pctile+r.pb_ratio_pctile)/3 ));
+    const qWidth = (qPct/100*50);
+    const vWidth = (vPct/100*50);
+    return `<tr>
+      <td><span class="ticker-tag">${r.ticker}</span></td>
+      <td>${byTicker(r.ticker).name}</td>
+      <td style="color:${SECTOR_COLORS[r.sector]}">${r.sector}</td>
+      <td class="mono">${fmt(r.pe_ratio)}x</td>
+      <td class="mono">${fmt(r.ev_ebitda)}x</td>
+      <td class="mono">${fmt(r.roe)}%</td>
+      <td class="mono" style="font-weight:600; color:${r.composite_score>=0?'var(--positive)':'var(--negative)'}">${fmt(r.composite_score)}</td>
+      <td><div class="ledger-bar-wrap">
+            <div class="ledger-bar quality" style="width:${qWidth}%"></div>
+            <div class="ledger-bar value" style="width:${vWidth}%"></div>
+            <div class="ledger-mid"></div>
+          </div></td>
+    </tr>`;
+  }).join('');
+
+  const traces = SECTORS.map(s=>{
+    const sub = compVal.filter(r=>r.sector===s);
+    return {
+      x:sub.map(r=>r.pe_ratio), y:sub.map(r=>r.roe),
+      text:sub.map(r=>r.ticker), mode:'markers+text', textposition:'top center',
+      textfont:{size:9, color:'#7C8894'},
+      marker:{size:sub.map(r=>Math.max(10, Math.sqrt((r.pe_ratio||1)*(r.revenue||1))/8)), color:SECTOR_COLORS[s], opacity:0.85},
+      name:s, type:'scatter'
+    };
+  });
+  Plotly.newPlot('scatterChart', traces, plotLayout({
+    xaxis:{title:{text:'P/E Ratio (x)', font:{color:'#7C8894'}}, gridcolor:'#1B2129'},
+    yaxis:{title:{text:'ROE (%)', font:{color:'#7C8894'}}, gridcolor:'#1B2129'}
+  }), {displayModeBar:false, responsive:true});
+}
+
+function renderAll(){
+  renderOverview();
+  renderTrends();
+  renderBenchmark();
+  renderValuation();
+}
+
+renderPills();
+renderCompanyList();
+renderAll();
+window.addEventListener('resize', ()=>{
+  ['ovChart','trendRevenue','trendMargins','trendReturns','trendLeverage','benchChart','scatterChart'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el && el.data) Plotly.Plots.resize(el);
+  });
+});
+</script>
+</body>
+</html>
