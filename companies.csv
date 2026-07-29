@@ -1,0 +1,26 @@
+ticker,name,sector,industry,country,currency
+INFT,Infotrek Systems,IT Services,IT Services,India,INR
+TCSY,TataCode Synergy,IT Services,IT Services,India,INR
+WPRO,Wipronix Global,IT Services,IT Services,India,INR
+HCLW,HCL Wavefront,IT Services,IT Services,India,INR
+MPHX,MphasiX Labs,IT Services,IT Services,India,INR
+HDBK,HDF Bank Ltd,Banking & NBFC,Banking & NBFC,India,INR
+ICIB,ICIC Bank Corp,Banking & NBFC,Banking & NBFC,India,INR
+BAJF,Bajaj Financio,Banking & NBFC,Banking & NBFC,India,INR
+KOTM,Kotam Mahindra Bank,Banking & NBFC,Banking & NBFC,India,INR
+SBIN2,State Bank Nova,Banking & NBFC,Banking & NBFC,India,INR
+SUNP,Sun Pharma Industries,Pharma,Pharma,India,INR
+CIPL,Ciplex Labs,Pharma,Pharma,India,INR
+DRRD,Dr. Reddish Labs,Pharma,Pharma,India,INR
+LUPN,Lupinex Pharma,Pharma,Pharma,India,INR
+AURO,Aurobindal Pharma,Pharma,Pharma,India,INR
+HULV,Hindustan Uni Lever,FMCG,FMCG,India,INR
+ITCL,ITC Leaf Ltd,FMCG,FMCG,India,INR
+NEST,Nestee India,FMCG,FMCG,India,INR
+BRIT,Britanniq Industries,FMCG,FMCG,India,INR
+DABR,Dabour India,FMCG,FMCG,India,INR
+MRTI,Maroti Suzuki,Auto & Ancillary,Auto & Ancillary,India,INR
+TAMO,Tatva Motors,Auto & Ancillary,Auto & Ancillary,India,INR
+BAJA,Bajaja Auto,Auto & Ancillary,Auto & Ancillary,India,INR
+EIMO,Eichar Motors,Auto & Ancillary,Auto & Ancillary,India,INR
+UVAM,Ultraviolette Automotive,EV / Clean Mobility,EV / Clean Mobility,India,INR
